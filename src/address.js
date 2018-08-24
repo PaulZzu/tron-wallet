@@ -27,9 +27,9 @@ export function getBase58CheckAddress (addressBytes) {
   return base58Check
 }
 
-export function getPubKeyFromPriKey (priKeyBytes) {
+export function getTronPubKey (pubKeyBytes) {
   var ec = new EC('secp256k1')
-  var key = ec.keyFromPrivate(priKeyBytes, 'bytes')
+  var key = ec.keyFromPublic(pubKeyBytes, 'bytes')
   var pubkey = key.getPublic()
   var x = pubkey.x
   var y = pubkey.y

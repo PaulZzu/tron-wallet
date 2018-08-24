@@ -20,7 +20,7 @@ import {
   getBase58CheckAddress,
   byteArray2hexStr,
   hexStr2byteArray,
-  getPubKeyFromPriKey
+  getTronPubKey
 } from './address'
 
 class TronWallet {
@@ -61,21 +61,12 @@ class TronWallet {
       assert(secp256k1.privateKeyVerify(privateKey), 'Invalid private key')
       this._seed = null
       this._node = {
-        _publicKey: secp256k1.publicKeyCreate(privateKey, true),
-        _privateKey: privateKey
+        publicKey: secp256k1.publicKeyCreate(privateKey, true),
+        privateKey: privateKey
       }
     }
     this._isTestNet = isTestNet || false
-    this._init()
-  }
-
-  _init () {
-    const priKey = this.getPrivateKey()
-    let priKeyHex = priKey.toString('hex')
-    while (priKeyHex.length < 64) {
-      priKeyHex = '0' + priKeyHex
-    }
-    this._priKeyBytes = hexStr2byteArray(priKeyHex)
+    this._pubKeyBytes = getTronPubKey(this._node.publicKey)
   }
 
   derivePath (path) {
@@ -101,16 +92,23 @@ class TronWallet {
   }
 
   getPrivateKey () {
-    assert(this._node._privateKey, 'can not get private when generate from public key')
-    return this._node._privateKey
+    assert(this._node.privateKey, 'can not get private when generate from public key')
+    return this._node.privateKey
   }
 
   getTronPrivateKey () {
+    const priKey = this.getPrivateKey()
+    let priKeyHex = priKey.toString('hex')
+    while (priKeyHex.length < 64) {
+      priKeyHex = '0' + priKeyHex
+    }
+    this._priKeyBytes = hexStr2byteArray(priKeyHex)
+
     return byteArray2hexStr(this._priKeyBytes)
   }
 
   getAddress () {
-    const addressBytes = computeAddress(getPubKeyFromPriKey(this._priKeyBytes), this._isTestNet)
+    const addressBytes = computeAddress(this._pubKeyBytes, this._isTestNet)
     return getBase58CheckAddress(addressBytes)
   }
 
