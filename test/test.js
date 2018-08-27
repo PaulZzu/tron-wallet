@@ -1,4 +1,3 @@
-// const assert = require('assert')
 const bip39 = require('bip39')
 const fetch = require('node-fetch')
 const TronWallet = require('../')
@@ -26,8 +25,13 @@ describe('Tron Wallet', function () {
     assert(node.getAddress())
   })
 
-  it('Can import from base58 string', () => {
+  it('Can import from private extended key', () => {
     const node = TronWallet.fromExtendedKey('xprv9s21ZrQH143K27GwrJ5SPAZc9KPn8i8gkjeXcQe5vPtRPgUDyoq8qrh4qCRPwZAxzP8abdc9nZduW7UDYN1B5V6rjhc3YPMXzr9ArHaM4M6')
+    assert(node.getAddress())
+  })
+
+  it('Can import from public extended key', () => {
+    const node = TronWallet.fromExtendedKey('xpub661MyMwAqRbcEbMQxKcSkJWLhMEGYArY7xa8Qo3hUjRQGUoNXM9PPf1YgT9CCwi8MNvRLW91thbtChgu6eP5qcUeg3x2QLQGfFfC5LqM5dt')
     assert(node.getAddress())
   })
 
