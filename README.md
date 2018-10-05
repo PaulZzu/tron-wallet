@@ -25,6 +25,8 @@ yarn add @cobo/tron
 * `getPrivateExtendedKey` - Return the private extend key (base58)
 * `getPublicExtendedKey` - Return the public extend key (base58)
 * `getAddress` - Return the tron address
+* `signMessage` - Retrun signed message
+* `verfiyMessage` - verify the Signature
 * `generateTransaction` - Return a tron transaction
   * `to` - the address you want to send to
   * `amount` - 1000000 = 1 TRX
