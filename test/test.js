@@ -63,6 +63,20 @@ describe('Tron Wallet', function () {
     return tx
   })
 
+  it('Can sign the message and verify it', () => {
+    const node = TronWallet.fromTronPrivateKey(pk, false)
+    const tx = node.signMessage('helloTron')
+    const address = node.getAddress()
+    assert(node.verfiyMessage(address, tx, 'helloTron'))
+  })
+
+  it('Will return false if sign the messaged is not matched', () => {
+    const node = TronWallet.fromTronPrivateKey(pk, false)
+    const tx = node.signMessage('helloTron')
+    const address = node.getAddress()
+    assert.equal(node.verfiyMessage(address, tx, 'helloTron2'), false)
+  })
+
   it('Can freeze some TRX', async () => {
     const node = TronWallet.fromTronPrivateKey(pk1, false)
     const res = await fetch('https://api.tronscan.org/api/block?sort=-timestamp&limit=1')

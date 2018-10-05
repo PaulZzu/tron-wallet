@@ -2,6 +2,7 @@ import bip39 from 'bip39'
 import assert from 'assert'
 import hdkey from 'hdkey'
 import secp256k1 from 'secp256k1'
+import elliptic from 'elliptic'
 import { Buffer } from 'safe-buffer'
 import {
   buildTransferTransaction,
@@ -12,7 +13,7 @@ import {
   buildAssetIssue,
   buildAssetParticipate
 } from '@tronscan/client/src/utils/transactionBuilder'
-import { signTransaction } from '@tronscan/client/src/utils/crypto'
+import { signTransaction, signBytes } from '@tronscan/client/src/utils/crypto'
 import JSSHA from 'jssha'
 import { addRef } from './transactionBuilder'
 import {
@@ -20,7 +21,9 @@ import {
   getBase58CheckAddress,
   byteArray2hexStr,
   hexStr2byteArray,
-  getTronPubKey
+  getTronPubKey,
+  pubKeyPointToBytes,
+  SHA256
 } from './address'
 
 class TronWallet {
@@ -124,6 +127,28 @@ class TronWallet {
   generateTransaction (to, amount, token = 'TRX', latestBlock) {
     const transaction = buildTransferTransaction(token, this.getAddress(), to, amount)
     return this.updateTransaction(transaction, latestBlock)
+  }
+
+  signMessage (message) {
+    return byteArray2hexStr(signBytes(this.getTronPrivateKey(), new Buffer(message)))
+  }
+
+  verfiyMessage (address, signature, message) {
+    const EC = elliptic.ec
+    const messageBytes = new Buffer(message)
+    const signedMessage = SHA256(messageBytes)
+
+    const signObj = {
+      'r': signature.slice(0, 64),
+      's': signature.slice(64, 128)
+    }
+    const signatureBytes = hexStr2byteArray(signature)
+    const recoverId = signatureBytes[signatureBytes.length - 1]
+    const ec = new EC('secp256k1')
+    const pub = ec.recoverPubKey(signedMessage, signObj, recoverId)
+    const pubBytes = pubKeyPointToBytes(pub)
+    const computedAddress = getBase58CheckAddress(computeAddress(pubBytes))
+    return computedAddress === address
   }
 
   updateAccount (name, latestBlock) {

@@ -31,8 +31,12 @@ export function getTronPubKey (pubKeyBytes) {
   var ec = new EC('secp256k1')
   var key = ec.keyFromPublic(pubKeyBytes, 'bytes')
   var pubkey = key.getPublic()
-  var x = pubkey.x
-  var y = pubkey.y
+  return pubKeyPointToBytes(pubkey)
+}
+
+export function pubKeyPointToBytes (point) {
+  var x = point.x
+  var y = point.y
   var xHex = x.toString('hex')
   while (xHex.length < 64) {
     xHex = '0' + xHex
@@ -117,7 +121,7 @@ export function longToByteArray (/* long */long) {
   return byteArray
 }
 
-function SHA256 (msgBytes) {
+export function SHA256 (msgBytes) {
   let shaObj = new Jssha('SHA-256', 'HEX')
   let msgHex = byteArray2hexStr(msgBytes)
   shaObj.update(msgHex)
