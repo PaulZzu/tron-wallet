@@ -1,6 +1,6 @@
 import { hexStr2byteArray, longToByteArray } from './address'
 
-export function addRef (transaction, latestBlock) {
+export function addRef(transaction, latestBlock) {
   let latestBlockHash = latestBlock.hash
   let latestBlockNum = latestBlock.number
   let numBytes = longToByteArray(latestBlockNum)

@@ -7,7 +7,7 @@ const EC = require('elliptic').ec
 const prefixTestNet = 'a0'
 const prefix = '41'
 
-export function computeAddress (pubBytes, isTestNet = false) {
+export function computeAddress(pubBytes, isTestNet = false) {
   if (pubBytes.length === 65) {
     pubBytes = pubBytes.slice(1)
   }
@@ -18,7 +18,7 @@ export function computeAddress (pubBytes, isTestNet = false) {
   return addressBytes
 }
 
-export function getBase58CheckAddress (addressBytes) {
+export function getBase58CheckAddress(addressBytes) {
   var hash0 = SHA256(addressBytes)
   var hash1 = SHA256(hash0)
   var checkSum = hash1.slice(0, 4)
@@ -27,14 +27,14 @@ export function getBase58CheckAddress (addressBytes) {
   return base58Check
 }
 
-export function getTronPubKey (pubKeyBytes) {
+export function getTronPubKey(pubKeyBytes) {
   var ec = new EC('secp256k1')
   var key = ec.keyFromPublic(pubKeyBytes, 'bytes')
   var pubkey = key.getPublic()
   return pubKeyPointToBytes(pubkey)
 }
 
-export function pubKeyPointToBytes (point) {
+export function pubKeyPointToBytes(point) {
   var x = point.x
   var y = point.y
   var xHex = x.toString('hex')
@@ -50,7 +50,7 @@ export function pubKeyPointToBytes (point) {
   return pubkeyBytes
 }
 
-function byte2hexStr (byte) {
+function byte2hexStr(byte) {
   var hexByteMap = '0123456789ABCDEF'
   var str = ''
   str += hexByteMap.charAt(byte >> 4)
@@ -58,7 +58,7 @@ function byte2hexStr (byte) {
   return str
 }
 
-export function byteArray2hexStr (byteArray) {
+export function byteArray2hexStr(byteArray) {
   let str = ''
   for (let i = 0; i < (byteArray.length); i++) {
     str += byte2hexStr(byteArray[i])
@@ -66,16 +66,16 @@ export function byteArray2hexStr (byteArray) {
   return str
 }
 
-function isHexChar (c) {
+function isHexChar(c) {
   if ((c >= 'A' && c <= 'F') ||
-      (c >= 'a' && c <= 'f') ||
-      (c >= '0' && c <= '9')) {
+    (c >= 'a' && c <= 'f') ||
+    (c >= '0' && c <= '9')) {
     return 1
   }
   return 0
 }
 
-function hexChar2byte (c) {
+function hexChar2byte(c) {
   var d = 0
   if (c >= 'A' && c <= 'F') {
     d = c.charCodeAt(0) - 'A'.charCodeAt(0) + 10
@@ -87,7 +87,7 @@ function hexChar2byte (c) {
   return d
 }
 
-export function hexStr2byteArray (str) {
+export function hexStr2byteArray(str) {
   var byteArray = []
   var d = 0
   var j = 0
@@ -108,23 +108,26 @@ export function hexStr2byteArray (str) {
   return byteArray
 }
 
-export function longToByteArray (/* long */long) {
+export function longToByteArray(/* long */long) {
   // we want to represent the input as a 8-bytes array
   var byteArray = [0, 0, 0, 0, 0, 0, 0, 0]
 
   for (var index = 0; index < byteArray.length; index++) {
     var byte = long & 0xff
-    byteArray[ index ] = byte
+    byteArray[index] = byte
     long = (long - byte) / 256
   }
 
   return byteArray
 }
 
-export function SHA256 (msgBytes) {
+export function SHA256Str(msgBytes) {
   let shaObj = new Jssha('SHA-256', 'HEX')
   let msgHex = byteArray2hexStr(msgBytes)
   shaObj.update(msgHex)
-  let hashHex = shaObj.getHash('HEX')
-  return hexStr2byteArray(hashHex)
+  return shaObj.getHash('HEX')
+}
+
+export function SHA256(msgBytes) {
+  return hexStr2byteArray(SHA256Str(msgBytes))
 }

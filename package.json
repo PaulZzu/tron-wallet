@@ -6,7 +6,7 @@
   "browser": "dist/index.umd.js",
   "react-native": "dist/index.esm.js",
   "dependencies": {
-    "@tronscan/client": "^0.2.2",
+    "@tronscan/client": "cobowallet/tronscan-node-client",
     "bip39": "^2.5.0",
     "bs58": "^4.0.1",
     "elliptic": "^6.4.1",
