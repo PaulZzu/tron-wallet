@@ -136,7 +136,7 @@ describe('Tron Wallet', function () {
               },
               type_url: 'type.googleapis.com/protocol.TriggerSmartContract'
             },
-            type: 'TriggerSmartContract',
+            type: 'TriggerSmartContract'
           }
         ],
         ref_block_bytes: '3059',

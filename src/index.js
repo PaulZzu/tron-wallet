@@ -29,32 +29,32 @@ import {
 } from './address'
 
 class TronWallet {
-  static generateMnemonic() {
+  static generateMnemonic () {
     return bip39.generateMnemonic()
   }
 
-  static fromMnemonic(mnemonic, isTestNet = false) {
+  static fromMnemonic (mnemonic, isTestNet = false) {
     const seed = bip39.mnemonicToSeedHex(mnemonic)
     return new this({ seed, isTestNet })
   }
 
-  static fromMasterSeed(seed, isTestNet = false) {
+  static fromMasterSeed (seed, isTestNet = false) {
     return new this({ seed, isTestNet })
   }
 
-  static fromExtendedKey(extendedKey, isTestNet = false) {
+  static fromExtendedKey (extendedKey, isTestNet = false) {
     return new this({ extendedKey, isTestNet })
   }
 
-  static fromPrivateKey(privateKey, isTestNet = false) {
+  static fromPrivateKey (privateKey, isTestNet = false) {
     return new this({ privateKey, isTestNet })
   }
 
-  static fromTronPrivateKey(pk, isTestNet = false) {
+  static fromTronPrivateKey (pk, isTestNet = false) {
     return new this({ privateKey: Buffer(pk, 'hex'), isTestNet })
   }
 
-  static getTxID(transaction) {
+  static getTxID (transaction) {
     let raw = transaction.raw_data
     if (raw && raw.contract && raw.contract.length > 0) {
       let contract = raw.contract[0]
@@ -76,7 +76,7 @@ class TronWallet {
     return ''
   }
 
-  constructor({ seed, extendedKey, privateKey, isTestNet }) {
+  constructor ({ seed, extendedKey, privateKey, isTestNet }) {
     if (seed) {
       this._seed = seed
       this._node = hdkey.fromMasterSeed(Buffer(seed, 'hex'))
@@ -96,34 +96,34 @@ class TronWallet {
     this._pubKeyBytes = getTronPubKey(this._node.publicKey)
   }
 
-  derivePath(path) {
+  derivePath (path) {
     assert(this._node.derive, 'can not derive when generate from private / public key')
     this._node = this._node.derive(path)
     return new TronWallet({ extendedKey: this._node.privateExtendedKey, isTestNet: this._isTestNet })
   }
 
-  deriveChild(index) {
+  deriveChild (index) {
     assert(this._node.deriveChild, 'can not derive when generate from private / public key')
     this._node = this._node.deriveChild(index)
     return new TronWallet({ extendedKey: this._node.privateExtendedKey, isTestNet: this._isTestNet })
   }
 
-  getPrivateExtendedKey() {
+  getPrivateExtendedKey () {
     assert(this._node.privateExtendedKey, 'can not get xpriv when generate from private / public key')
     return this._node.privateExtendedKey
   }
 
-  getPublicExtendedKey() {
+  getPublicExtendedKey () {
     assert(this._node.publicExtendedKey, 'can not get xpub when generate from private / public key')
     return this._node.publicExtendedKey
   }
 
-  getPrivateKey() {
+  getPrivateKey () {
     assert(this._node.privateKey, 'can not get private when generate from public key')
     return this._node.privateKey
   }
 
-  getTronPrivateKey() {
+  getTronPrivateKey () {
     const priKey = this.getPrivateKey()
     let priKeyHex = priKey.toString('hex')
     while (priKeyHex.length < 64) {
@@ -134,12 +134,12 @@ class TronWallet {
     return byteArray2hexStr(this._priKeyBytes)
   }
 
-  getAddress() {
+  getAddress () {
     const addressBytes = computeAddress(this._pubKeyBytes, this._isTestNet)
     return getBase58CheckAddress(addressBytes)
   }
 
-  updateTransaction(tx, latestBlock) {
+  updateTransaction (tx, latestBlock) {
     const transactionWithRefs = addRef(tx, latestBlock)
     const signed = signTransaction(this.getTronPrivateKey(), transactionWithRefs)
     const shaObj = new JSSHA('SHA-256', 'HEX')
@@ -148,16 +148,16 @@ class TronWallet {
     return { txid, ...signed }
   }
 
-  generateTransaction(to, amount, token = 'TRX', latestBlock) {
+  generateTransaction (to, amount, token = 'TRX', latestBlock) {
     const transaction = buildTransferTransaction(token, this.getAddress(), to, amount)
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  signMessage(message) {
+  signMessage (message) {
     return byteArray2hexStr(signBytes(this.getTronPrivateKey(), new Buffer(message)))
   }
 
-  verfiyMessage(address, signature, message) {
+  verfiyMessage (address, signature, message) {
     const EC = elliptic.ec
     const messageBytes = new Buffer(message)
     const signedMessage = SHA256(messageBytes)
@@ -175,32 +175,32 @@ class TronWallet {
     return computedAddress === address
   }
 
-  updateAccount(name, latestBlock) {
+  updateAccount (name, latestBlock) {
     const transaction = buildAccountUpdate(this.getAddress(), name)
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  freeze(amount, duration = 3, latestBlock) {
+  freeze (amount, duration = 3, latestBlock) {
     const transaction = buildFreezeBalance(this.getAddress(), amount, duration)
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  unfreeze(latestBlock) {
+  unfreeze (latestBlock) {
     const transaction = buildUnfreezeBalance(this.getAddress())
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  vote(votes, latestBlock) {
+  vote (votes, latestBlock) {
     const transaction = buildVote(this.getAddress(), votes)
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  issueAssets(options, latestBlock) {
+  issueAssets (options, latestBlock) {
     const transaction = buildAssetIssue(options, latestBlock)
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  buyAssets(issuer, token, amount, latestBlock) {
+  buyAssets (issuer, token, amount, latestBlock) {
     const transaction = buildAssetParticipate(this.getAddress(), issuer, token, amount)
     return this.updateTransaction(transaction, latestBlock)
   }
