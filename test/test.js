@@ -94,7 +94,7 @@ describe('Tron Wallet', function () {
   })
 
   it('Verify Tronbet TriggerSmartContract', () => {
-    let tx = {
+    const tx = {
       raw_data: {
         contract: [
           {
@@ -122,7 +122,7 @@ describe('Tron Wallet', function () {
   })
 
   it('Verify Trondice TriggerSmartContract', () => {
-    let tx = {
+    const tx = {
       // txID: '3191743bb7b3b0f9318d4c534fb7966b13888bdac409d2f6f2a7201698e3748a',
       raw_data: {
         contract: [
@@ -150,7 +150,7 @@ describe('Tron Wallet', function () {
   })
 
   it('Verify TronFOMO TriggerSmartContract', () => {
-    let tx = {
+    const tx = {
       // txID: 'c8bfe791e44a0866396774c093d2e545ef32ed41d05159c076540ff2ed906cac',
       raw_data: {
         contract: [
@@ -178,7 +178,7 @@ describe('Tron Wallet', function () {
   })
 
   it('Verify TronBaccarat TriggerSmartContract', () => {
-    let tx = {
+    const tx = {
       // txID: 'f10f5ce33e74eef37b053eae019ee1142898fb82e915c8b4bd950e7591495faa',
       raw_data: {
         contract: [

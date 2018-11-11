@@ -55,20 +55,20 @@ class TronWallet {
   }
 
   static getTxID (transaction) {
-    let raw = transaction.raw_data
+    const raw = transaction.raw_data
     if (raw && raw.contract && raw.contract.length > 0) {
-      let contract = raw.contract[0]
+      const contract = raw.contract[0]
       if (contract.type === 'TriggerSmartContract') {
-        let value = contract.parameter.value
-        let txMessage = buildTriggerSmartContract(value.owner_address, value.contract_address, value.call_value, value.data)
-        let rawData = txMessage.getRawData()
+        const value = contract.parameter.value
+        const txMessage = buildTriggerSmartContract(value.owner_address, value.contract_address, value.call_value, value.data)
+        const rawData = txMessage.getRawData()
         rawData.setRefBlockHash(Uint8Array.from(hexStr2byteArray(raw.ref_block_hash)))
         rawData.setRefBlockBytes(Uint8Array.from(hexStr2byteArray(raw.ref_block_bytes)))
         rawData.setExpiration(raw.expiration)
         rawData.setFeeLimit(raw.fee_limit)
         rawData.setTimestamp(raw.timestamp)
         txMessage.setRawData(rawData)
-        let digest = txMessage.getRawData().serializeBinary()
+        const digest = txMessage.getRawData().serializeBinary()
         return SHA256Str(digest)
       }
     }
