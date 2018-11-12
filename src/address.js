@@ -68,8 +68,8 @@ export function byteArray2hexStr (byteArray) {
 
 function isHexChar (c) {
   if ((c >= 'A' && c <= 'F') ||
-      (c >= 'a' && c <= 'f') ||
-      (c >= '0' && c <= '9')) {
+    (c >= 'a' && c <= 'f') ||
+    (c >= '0' && c <= '9')) {
     return 1
   }
   return 0
@@ -114,17 +114,20 @@ export function longToByteArray (/* long */long) {
 
   for (var index = 0; index < byteArray.length; index++) {
     var byte = long & 0xff
-    byteArray[ index ] = byte
+    byteArray[index] = byte
     long = (long - byte) / 256
   }
 
   return byteArray
 }
 
-export function SHA256 (msgBytes) {
+export function SHA256Str (msgBytes) {
   let shaObj = new Jssha('SHA-256', 'HEX')
   let msgHex = byteArray2hexStr(msgBytes)
   shaObj.update(msgHex)
-  let hashHex = shaObj.getHash('HEX')
-  return hexStr2byteArray(hashHex)
+  return shaObj.getHash('HEX')
+}
+
+export function SHA256 (msgBytes) {
+  return hexStr2byteArray(SHA256Str(msgBytes))
 }

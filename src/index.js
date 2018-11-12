@@ -11,7 +11,8 @@ import {
   buildFreezeBalance,
   buildUnfreezeBalance,
   buildAssetIssue,
-  buildAssetParticipate
+  buildAssetParticipate,
+  buildTriggerSmartContract
 } from '@tronscan/client/src/utils/transactionBuilder'
 import { signTransaction, signBytes } from '@tronscan/client/src/utils/crypto'
 import JSSHA from 'jssha'
@@ -23,7 +24,8 @@ import {
   hexStr2byteArray,
   getTronPubKey,
   pubKeyPointToBytes,
-  SHA256
+  SHA256,
+  SHA256Str
 } from './address'
 
 class TronWallet {
@@ -50,6 +52,28 @@ class TronWallet {
 
   static fromTronPrivateKey (pk, isTestNet = false) {
     return new this({ privateKey: Buffer(pk, 'hex'), isTestNet })
+  }
+
+  static getTxID (transaction) {
+    const raw = transaction.raw_data
+    if (raw && raw.contract && raw.contract.length > 0) {
+      const contract = raw.contract[0]
+      if (contract.type === 'TriggerSmartContract') {
+        const value = contract.parameter.value
+        const txMessage = buildTriggerSmartContract(value.owner_address, value.contract_address, value.call_value, value.data)
+        const rawData = txMessage.getRawData()
+        rawData.setRefBlockHash(Uint8Array.from(hexStr2byteArray(raw.ref_block_hash)))
+        rawData.setRefBlockBytes(Uint8Array.from(hexStr2byteArray(raw.ref_block_bytes)))
+        rawData.setExpiration(raw.expiration)
+        rawData.setFeeLimit(raw.fee_limit)
+        rawData.setTimestamp(raw.timestamp)
+        txMessage.setRawData(rawData)
+        const digest = txMessage.getRawData().serializeBinary()
+        return SHA256Str(digest)
+      }
+    }
+    // TODO: support other transaction types
+    return ''
   }
 
   constructor ({ seed, extendedKey, privateKey, isTestNet }) {
