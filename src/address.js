@@ -19,10 +19,12 @@ export function computeAddress (pubBytes, isTestNet = false) {
 }
 
 export function getBase58CheckAddress (addressBytes) {
+  console.log('the', addressBytes)
   var hash0 = SHA256(addressBytes)
   var hash1 = SHA256(hash0)
   var checkSum = hash1.slice(0, 4)
   checkSum = addressBytes.concat(checkSum)
+  console.log('the cs', checkSum)
   var base58Check = bs58.encode(checkSum)
   return base58Check
 }

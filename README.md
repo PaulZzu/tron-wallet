@@ -52,4 +52,4 @@ return Tron
 
 ### Examples
 
-See `test/test.js` for detail usage
+See `test/test.js` for detail usage and you can see the details
