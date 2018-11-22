@@ -1,96 +1,180 @@
 const bip39 = require('bip39')
-const fetch = require('node-fetch')
+const hdkey = require('hdkey')
 const TronWallet = require('../')
-const mnemonic = 'cobo wallet is awesome'
 const assert = require('assert')
-const seed = bip39.mnemonicToSeedHex(mnemonic)
-const pk = '43B75088348B0E2F0B5FABC6F43CF5C084B0010FBFA2D86160A70E5AF7E17E56'
-const pk1 = '2193A720B5811BE5E48D8D25CF7473D47E3556A017922ED36CC3A3A137437751'
+
+const mnemonic = 'cobo wallet is awesome'
+const seed =
+  '621aec8c28bf4689bdc19558fe3d7881b354a0586be1090e6dc308fddf161af46df067ee458fbafe160a29ea64d21a402dfa8c4f14f41cde84142eee8be69aa2' // mnemonicToSeedHex
+
+const xprv =
+  'xprv9yQPCnKHN6U5BLPJN5b6AL7KvQQtADWThKbpVeSGFuvenZFgXzKGpEcKpvHcSJT6sTSsDP8gLQETecqnHDQuEajtCa27dqdBjxc8fgusWU1' // path: m/44'/195'/0'
+
+const pk = '986e593a779463e5d15fba95939f22d48736ccac90d4d451942cdc1047757f06' // path: m/44'/195'/0'/0/0
+const addressMainNet = 'TUAhxw3MgMyR9rhyrMDnVJbo3bky1GSUrH' // path: m/44'/195'/0'/0/0
+
+const refBlock = {
+  hash: '315f1ee0e082a1dae1b9de559665c6714f3b8667f69cd5e44466ba6e34d37aef',
+  number: 1936,
+  timestamp: 1527682440000
+}
 
 describe('Tron Wallet', function () {
-  it('Can get tron account from HD wallet structure', () => {
-    const node = TronWallet.fromMasterSeed(seed, true)
-    const node1 = TronWallet.fromTronPrivateKey(pk, true)
-    const nodeMainnet = TronWallet.fromTronPrivateKey(pk)
+  it('Can import wallet from multiple way', () => {
+    assert.strictEqual(
+      TronWallet.fromMnemonic(mnemonic)
+        .derivePath("m/44'/195'/0'/0/0")
+        .getAddress(),
+      addressMainNet
+    )
 
-    assert.equal(node.getAddress(), '27QXjqR1iz6DhRNPj9PXx7W6h6NwM3r4gT2')
-    assert.equal(node.getTronPrivateKey(), '2EBF15FCEF9CEF30CA13731FD08CEB6F4F7C5E1C2A5794977068FD9BAC2E2DAC')
-    assert.equal(node1.getAddress(), '27UozX7c7y8iXJRQ9La9kwGozokGnBURhfV')
-    assert.equal(nodeMainnet.getAddress(), 'TFhgyoHkWzhHcF9v1iWUsMxG1poAg8xxXb')
+    assert.strictEqual(
+      TronWallet.fromMasterSeed(seed)
+        .derivePath("m/44'/195'/0'/0/0")
+        .getAddress(),
+      addressMainNet
+    )
+
+    assert.strictEqual(
+      TronWallet.fromExtendedKey(xprv)
+        .derivePath('m/0/0')
+        .getAddress(),
+      addressMainNet
+    )
+
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk).getAddress(),
+      addressMainNet
+    )
+
+    assert.strictEqual(
+      TronWallet.fromPrivateKey(Buffer.from(pk, 'hex')).getAddress(),
+      addressMainNet
+    )
+  })
+
+  it('Can generate test net address', () => {
+    const addressTestNet = '27hH1WFMj8Vzer2xDBCs4ZDTXqXEachaTGt' // path: m/44'/195'/0'/0/0, the same path like main net, but different prefix
+
+    assert.strictEqual(
+      TronWallet.fromMnemonic(mnemonic, true)
+        .derivePath("m/44'/195'/0'/0/0")
+        .getAddress(),
+      addressTestNet
+    )
+
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk, true).getAddress(),
+      addressTestNet
+    )
   })
 
   it('Can generate new mnemonic and import', () => {
-    const myMnemonic = TronWallet.generateMnemonic()
-    const node = TronWallet.fromMnemonic(myMnemonic)
-    assert(node.getAddress())
+    const newMnemonic = TronWallet.generateMnemonic()
+    assert.strictEqual(
+      TronWallet.fromMnemonic(newMnemonic)
+        .getPrivateKey()
+        .toString(),
+      hdkey
+        .fromMasterSeed(bip39.mnemonicToSeed(newMnemonic))
+        .privateKey.toString()
+    )
   })
 
-  it('Can import from private extended key', () => {
-    const node = TronWallet.fromExtendedKey('xprv9s21ZrQH143K27GwrJ5SPAZc9KPn8i8gkjeXcQe5vPtRPgUDyoq8qrh4qCRPwZAxzP8abdc9nZduW7UDYN1B5V6rjhc3YPMXzr9ArHaM4M6')
-    assert(node.getAddress())
+  it('Can derive to child nodes', () => {
+    const accountNode = TronWallet.fromExtendedKey(xprv)
+
+    assert.notStrictEqual(
+      accountNode.getPrivateKey().toString('hex'),
+      accountNode
+        .derivePath('m/0/0')
+        .getPrivateKey()
+        .toString('hex')
+    )
+
+    assert.strictEqual(
+      accountNode.derivePath('m/0/0').getAddress(),
+      addressMainNet
+    )
+
+    assert.strictEqual(
+      accountNode
+        .derivePath('m/0')
+        .deriveChild(0)
+        .getAddress(),
+      addressMainNet
+    )
   })
 
-  it('Can import from public extended key', () => {
-    const node = TronWallet.fromExtendedKey('xpub661MyMwAqRbcEbMQxKcSkJWLhMEGYArY7xa8Qo3hUjRQGUoNXM9PPf1YgT9CCwi8MNvRLW91thbtChgu6eP5qcUeg3x2QLQGfFfC5LqM5dt')
-    assert(node.getAddress())
+  it('Can generate transaction', async () => {
+    const tx = TronWallet.fromTronPrivateKey(pk).generateTransaction(
+      'TLNUxjgFxy8YhuhsrynLYsMNx93B4a5NvF',
+      1000000,
+      'TRX',
+      refBlock
+    )
+    assert.strictEqual(
+      tx.hex,
+      '0A7E0A0207902208E1B9DE559665C67140A0DEF287BB2C5A67080112630A2D747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E5472616E73666572436F6E747261637412320A1541C79F045E4D48AD8DAE00E6A6714DAE1E000ADFCD121541721825CD2A4A8AE79EFE16A42A986916CE7FCA8618C0843D12411219AEEF07CB7228FDFEF2E6861E06D2B0C56929359DAE97C557088002169A146B36B98BB609ADD75F1B56E8D67BE11C162C6645C28E8087015A78FF27B331A301'
+    )
   })
 
-  it('Can derive to child nodes and get address', () => {
-    const parentNode = TronWallet.fromMasterSeed(seed, true)
-    const childNode1 = parentNode.derivePath("m/44'/194'/0'/0/0")
-    assert.equal(childNode1.getAddress(), '27Vsbb84NX6hNgR7kAGwi74BAXV7TdCcHTp')
-    const childNode2 = parentNode.deriveChild(0)
-    assert.equal(childNode2.getAddress(), '27Qy2jqg5KLzwKxz4HYxabqqiEkAkBWb4aN')
+  it('Can sign the message', () => {
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk).signMessage('helloTron'),
+      '0C3009511DF885C7F22FF20D94A720A40A1834F3CE7062E334E52646EB9D6CA9EC2D8EAB3F6D7462624593BABBFE46D02C12BDFB842416872F3CE75558FA17C100'
+    )
   })
 
-  it('Can generate from tron private key', async () => {
-    // 43B75088348B0E2F0B5FABC6F43CF5C084B0010FBFA2D86160A70E5AF7E17E56
-    const node = TronWallet.fromTronPrivateKey(pk, false)
-    const res = await fetch('https://api.tronscan.org/api/block?sort=-timestamp&limit=1')
-    const { data } = await res.json()
-    const tx = node.generateTransaction('TFhgyoHkWzhHcF9v1iWUsMxG1poAg8xxXb', 1000000, 'TRX', data[0])
-    return tx
+  it('Can verify the message', () => {
+    assert(
+      TronWallet.fromTronPrivateKey(pk).verfiyMessage(
+        addressMainNet,
+        '0C3009511DF885C7F22FF20D94A720A40A1834F3CE7062E334E52646EB9D6CA9EC2D8EAB3F6D7462624593BABBFE46D02C12BDFB842416872F3CE75558FA17C100',
+        'helloTron'
+      )
+    )
   })
 
-  it('Cen generate transaction offline', () => {
-    const node = TronWallet.fromTronPrivateKey(pk, false)
-    const latestBlock = {
-      hash: '315f1ee0e082a1dae1b9de559665c6714f3b8667f69cd5e44466ba6e34d37aef',
-      number: 1936,
-      timestamp: 1527682440000
-    }
-    const tx = node.generateTransaction('27Vsbb84NX6hNgR7kAGwi74BAXV7TdCcHTp', 100000000, 'TRX', latestBlock)
-    return tx
+  it('Can freeze BANDWIDTH', async () => {
+    const node = TronWallet.fromTronPrivateKey(pk)
+    const freezeBandWidthHex =
+      '0A6F0A0207902208E1B9DE559665C67140A0DEF287BB2C5A58080B12540A32747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E467265657A6542616C616E6365436F6E7472616374121E0A1541C79F045E4D48AD8DAE00E6A6714DAE1E000ADFCD1080ADE20418031241E1D2A94BAD231B9E189A478E11B5635B0C4EF29EBA004F0BB712996667C7EB42850856893990CFAB9A63B27FB333B6E2993DE9A45572DCCB4501539FC41EDACA00'
+
+    assert.strictEqual(
+      node.freeze(10000000, 3, refBlock).hex, // freeze BANDWIDTH default
+      freezeBandWidthHex
+    )
+
+    assert.strictEqual(
+      node.freeze(10000000, 3, refBlock, 'BANDWIDTH').hex,
+      freezeBandWidthHex
+    )
   })
 
-  it('Can sign the message and verify it', () => {
-    const node = TronWallet.fromTronPrivateKey(pk, false)
-    const tx = node.signMessage('helloTron')
-    const address = node.getAddress()
-    assert(node.verfiyMessage(address, tx, 'helloTron'))
+  it('Can freeze ENERGY', async () => {
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk).freeze(10000000, 3, refBlock, 'ENERGY')
+        .hex,
+      '0A710A0207902208E1B9DE559665C67140A0DEF287BB2C5A5A080B12560A32747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E467265657A6542616C616E6365436F6E747261637412200A1541C79F045E4D48AD8DAE00E6A6714DAE1E000ADFCD1080ADE204180350011241003854497A4A49704A586D6C1D8B08DCD84C16468F716A14E0D3F8DFADB99AF7CA21083CCBD466FF8413ED5F5BBE53DC8226D945AAB3006FFCF9E41242729E5201'
+    )
   })
 
-  it('Will return false if sign the messaged is not matched', () => {
-    const node = TronWallet.fromTronPrivateKey(pk, false)
-    const tx = node.signMessage('helloTron')
-    const address = node.getAddress()
-    assert.equal(node.verfiyMessage(address, tx, 'helloTron2'), false)
+  it('Can unfreeze', async () => {
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk).unfreeze(refBlock).hex,
+      '0A6A0A0207902208E1B9DE559665C67140A0DEF287BB2C5A53080C124F0A34747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E556E667265657A6542616C616E6365436F6E747261637412170A1541C79F045E4D48AD8DAE00E6A6714DAE1E000ADFCD1241EB49F0D9A315EEF9E8FA11234645CDCC70C00618E69D29247BB98DDD01DA9E3AF58D3E46FBD445D7C7945F486B7CC2E2535CF97BAAD2282A1C6A5A7B3B22BB0E00'
+    )
   })
 
-  it('Can freeze some TRX', async () => {
-    const node = TronWallet.fromTronPrivateKey(pk1, false)
-    const res = await fetch('https://api.tronscan.org/api/block?sort=-timestamp&limit=1')
-    const { data } = await res.json()
-    const tx = node.freeze(10000000, 3, data[0])
-    return tx
-  })
-
-  it('Can unfreeze TRX', async () => {
-    const node = TronWallet.fromTronPrivateKey(pk, false)
-    const res = await fetch('https://api.tronscan.org/api/block?sort=-timestamp&limit=1')
-    const { data } = await res.json()
-    const tx = node.unfreeze(data[0])
-    return tx
+  it('Can vote', async () => {
+    assert.strictEqual(
+      TronWallet.fromTronPrivateKey(pk).vote(
+        { TLNUxjgFxy8YhuhsrynLYsMNx93B4a5NvF: 100 },
+        refBlock
+      ).hex,
+      '0A81010A0207902208E1B9DE559665C67140A0DEF287BB2C5A6A080412660A30747970652E676F6F676C65617069732E636F6D2F70726F746F636F6C2E566F74655769746E657373436F6E747261637412320A1541C79F045E4D48AD8DAE00E6A6714DAE1E000ADFCD12190A1541721825CD2A4A8AE79EFE16A42A986916CE7FCA8610641241266A006E65B6EFEECB4FABA70A5BF7352884A4D12F18E5352654B009107163A40F6984CE11D9C532C097B1FC93B88BB47FE3A0F656DDBDC9AEC92509D238859900'
+    )
   })
 
   it('Verify Tronbet TriggerSmartContract', () => {
@@ -118,7 +202,10 @@ describe('Tron Wallet', function () {
         timestamp: 1541634152623
       }
     }
-    assert.equal('5625749ba36702ddb3bf158b4ce20ba4e8f552ac8639b6c5ecc88101aa5326b2', TronWallet.getTxID(tx).toString())
+    assert.strictEqual(
+      '5625749ba36702ddb3bf158b4ce20ba4e8f552ac8639b6c5ecc88101aa5326b2',
+      TronWallet.getTxID(tx).toString()
+    )
   })
 
   it('Verify Trondice TriggerSmartContract', () => {
@@ -129,7 +216,8 @@ describe('Tron Wallet', function () {
           {
             parameter: {
               value: {
-                data: '7365870b0000000000000000000000000000000000000000000000000000000000000032',
+                data:
+                  '7365870b0000000000000000000000000000000000000000000000000000000000000032',
                 owner_address: '41f927c5f87d9070cad933af1bbe9ac81d8fa7b9c9',
                 contract_address: '41e19c9914380de8eb9df99b9e6965bd5bf75f2c66',
                 call_value: 10000000
@@ -146,7 +234,10 @@ describe('Tron Wallet', function () {
         timestamp: 1541785861024
       }
     }
-    assert.equal('3191743bb7b3b0f9318d4c534fb7966b13888bdac409d2f6f2a7201698e3748a', TronWallet.getTxID(tx).toString())
+    assert.strictEqual(
+      '3191743bb7b3b0f9318d4c534fb7966b13888bdac409d2f6f2a7201698e3748a',
+      TronWallet.getTxID(tx).toString()
+    )
   })
 
   it('Verify TronFOMO TriggerSmartContract', () => {
@@ -157,7 +248,8 @@ describe('Tron Wallet', function () {
           {
             parameter: {
               value: {
-                data: 'b32820e9000000000000000000000000000000000000000000000000000000000000000a',
+                data:
+                  'b32820e9000000000000000000000000000000000000000000000000000000000000000a',
                 owner_address: '41f927c5f87d9070cad933af1bbe9ac81d8fa7b9c9',
                 contract_address: '416be6e1772a94567134116b8e069595dce3f67276',
                 call_value: 16000000
@@ -174,7 +266,10 @@ describe('Tron Wallet', function () {
         timestamp: 1541786474648
       }
     }
-    assert.equal('c8bfe791e44a0866396774c093d2e545ef32ed41d05159c076540ff2ed906cac', TronWallet.getTxID(tx).toString())
+    assert.strictEqual(
+      'c8bfe791e44a0866396774c093d2e545ef32ed41d05159c076540ff2ed906cac',
+      TronWallet.getTxID(tx).toString()
+    )
   })
 
   it('Verify TronBaccarat TriggerSmartContract', () => {
@@ -203,6 +298,9 @@ describe('Tron Wallet', function () {
         timestamp: 1541787852531
       }
     }
-    assert.equal('f10f5ce33e74eef37b053eae019ee1142898fb82e915c8b4bd950e7591495faa', TronWallet.getTxID(tx).toString())
+    assert.strictEqual(
+      'f10f5ce33e74eef37b053eae019ee1142898fb82e915c8b4bd950e7591495faa',
+      TronWallet.getTxID(tx).toString()
+    )
   })
 })

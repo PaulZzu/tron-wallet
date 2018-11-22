@@ -34,7 +34,7 @@ class TronWallet {
   }
 
   static fromMnemonic (mnemonic, isTestNet = false) {
-    const seed = bip39.mnemonicToSeedHex(mnemonic)
+    const seed = bip39.mnemonicToSeed(mnemonic)
     return new this({ seed, isTestNet })
   }
 
@@ -51,7 +51,7 @@ class TronWallet {
   }
 
   static fromTronPrivateKey (pk, isTestNet = false) {
-    return new this({ privateKey: Buffer(pk, 'hex'), isTestNet })
+    return new this({ privateKey: Buffer.from(pk, 'hex'), isTestNet })
   }
 
   static getTxID (transaction) {
@@ -60,10 +60,19 @@ class TronWallet {
       const contract = raw.contract[0]
       if (contract.type === 'TriggerSmartContract') {
         const value = contract.parameter.value
-        const txMessage = buildTriggerSmartContract(value.owner_address, value.contract_address, value.call_value, value.data)
+        const txMessage = buildTriggerSmartContract(
+          value.owner_address,
+          value.contract_address,
+          value.call_value,
+          value.data
+        )
         const rawData = txMessage.getRawData()
-        rawData.setRefBlockHash(Uint8Array.from(hexStr2byteArray(raw.ref_block_hash)))
-        rawData.setRefBlockBytes(Uint8Array.from(hexStr2byteArray(raw.ref_block_bytes)))
+        rawData.setRefBlockHash(
+          Uint8Array.from(hexStr2byteArray(raw.ref_block_hash))
+        )
+        rawData.setRefBlockBytes(
+          Uint8Array.from(hexStr2byteArray(raw.ref_block_bytes))
+        )
         rawData.setExpiration(raw.expiration)
         rawData.setFeeLimit(raw.fee_limit)
         rawData.setTimestamp(raw.timestamp)
@@ -78,48 +87,74 @@ class TronWallet {
 
   constructor ({ seed, extendedKey, privateKey, isTestNet }) {
     if (seed) {
-      this._seed = seed
-      this._node = hdkey.fromMasterSeed(Buffer(seed, 'hex'))
+      if (Buffer.isBuffer(seed)) {
+        this._node = hdkey.fromMasterSeed(seed)
+      } else if (typeof seed === 'string') {
+        this._node = hdkey.fromMasterSeed(Buffer.from(seed, 'hex'))
+      } else {
+        throw new Error('seed should be buffer or hex string')
+      }
     } else if (extendedKey) {
-      this._seed = null
       this._node = hdkey.fromExtendedKey(extendedKey)
+      assert(this._node.privateExtendedKey, 'Please use extend private key')
     } else {
-      assert.equal(privateKey.length, 32, 'Private key must be 32 bytes.')
+      assert.strictEqual(
+        privateKey.length,
+        32,
+        'Private key must be 32 bytes.'
+      )
       assert(secp256k1.privateKeyVerify(privateKey), 'Invalid private key')
-      this._seed = null
       this._node = {
         publicKey: secp256k1.publicKeyCreate(privateKey, true),
         privateKey: privateKey
       }
     }
     this._isTestNet = isTestNet || false
-    this._pubKeyBytes = getTronPubKey(this._node.publicKey)
   }
 
   derivePath (path) {
-    assert(this._node.derive, 'can not derive when generate from private / public key')
-    this._node = this._node.derive(path)
-    return new TronWallet({ extendedKey: this._node.privateExtendedKey, isTestNet: this._isTestNet })
+    assert(
+      this._node.derive,
+      'can not derive when generate from private / public key'
+    )
+    return new TronWallet({
+      extendedKey: this._node.derive(path).privateExtendedKey,
+      isTestNet: this._isTestNet
+    })
   }
 
   deriveChild (index) {
-    assert(this._node.deriveChild, 'can not derive when generate from private / public key')
-    this._node = this._node.deriveChild(index)
-    return new TronWallet({ extendedKey: this._node.privateExtendedKey, isTestNet: this._isTestNet })
+    assert(
+      this._node.deriveChild,
+      'can not derive when generate from private / public key'
+    )
+    return new TronWallet({
+      extendedKey: this._node.deriveChild(index).privateExtendedKey,
+      isTestNet: this._isTestNet
+    })
   }
 
   getPrivateExtendedKey () {
-    assert(this._node.privateExtendedKey, 'can not get xpriv when generate from private / public key')
+    assert(
+      this._node.privateExtendedKey,
+      'can not get xpriv when generate from private / public key'
+    )
     return this._node.privateExtendedKey
   }
 
   getPublicExtendedKey () {
-    assert(this._node.publicExtendedKey, 'can not get xpub when generate from private / public key')
+    assert(
+      this._node.publicExtendedKey,
+      'can not get xpub when generate from private / public key'
+    )
     return this._node.publicExtendedKey
   }
 
   getPrivateKey () {
-    assert(this._node.privateKey, 'can not get private when generate from public key')
+    assert(
+      this._node.privateKey,
+      'can not get private when generate from public key'
+    )
     return this._node.privateKey
   }
 
@@ -135,13 +170,16 @@ class TronWallet {
   }
 
   getAddress () {
-    const addressBytes = computeAddress(this._pubKeyBytes, this._isTestNet)
+    const addressBytes = computeAddress(getTronPubKey(this._node.publicKey), this._isTestNet)
     return getBase58CheckAddress(addressBytes)
   }
 
   updateTransaction (tx, latestBlock) {
     const transactionWithRefs = addRef(tx, latestBlock)
-    const signed = signTransaction(this.getTronPrivateKey(), transactionWithRefs)
+    const signed = signTransaction(
+      this.getTronPrivateKey(),
+      transactionWithRefs
+    )
     const shaObj = new JSSHA('SHA-256', 'HEX')
     shaObj.update(signed.hex)
     const txid = shaObj.getHash('HEX')
@@ -149,22 +187,29 @@ class TronWallet {
   }
 
   generateTransaction (to, amount, token = 'TRX', latestBlock) {
-    const transaction = buildTransferTransaction(token, this.getAddress(), to, amount)
+    const transaction = buildTransferTransaction(
+      token,
+      this.getAddress(),
+      to,
+      amount
+    )
     return this.updateTransaction(transaction, latestBlock)
   }
 
   signMessage (message) {
-    return byteArray2hexStr(signBytes(this.getTronPrivateKey(), new Buffer(message)))
+    return byteArray2hexStr(
+      signBytes(this.getTronPrivateKey(), Buffer.from(message))
+    )
   }
 
   verfiyMessage (address, signature, message) {
     const EC = elliptic.ec
-    const messageBytes = new Buffer(message)
+    const messageBytes = Buffer.from(message)
     const signedMessage = SHA256(messageBytes)
 
     const signObj = {
-      'r': signature.slice(0, 64),
-      's': signature.slice(64, 128)
+      r: signature.slice(0, 64),
+      s: signature.slice(64, 128)
     }
     const signatureBytes = hexStr2byteArray(signature)
     const recoverId = signatureBytes[signatureBytes.length - 1]
@@ -180,8 +225,17 @@ class TronWallet {
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  freeze (amount, duration = 3, latestBlock) {
-    const transaction = buildFreezeBalance(this.getAddress(), amount, duration)
+  freeze (amount, duration = 3, latestBlock, resource = 'BANDWIDTH') {
+    assert(
+      ['BANDWIDTH', 'ENERGY'].includes(resource),
+      'resource should be one of [BANDWIDTH, ENERGY]'
+    )
+    const transaction = buildFreezeBalance(
+      this.getAddress(),
+      amount,
+      duration,
+      resource
+    )
     return this.updateTransaction(transaction, latestBlock)
   }
 
@@ -201,7 +255,12 @@ class TronWallet {
   }
 
   buyAssets (issuer, token, amount, latestBlock) {
-    const transaction = buildAssetParticipate(this.getAddress(), issuer, token, amount)
+    const transaction = buildAssetParticipate(
+      this.getAddress(),
+      issuer,
+      token,
+      amount
+    )
     return this.updateTransaction(transaction, latestBlock)
   }
 }
