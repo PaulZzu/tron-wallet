@@ -27,6 +27,10 @@ import {
   SHA256,
   SHA256Str
 } from './address'
+import {
+  toHexAddress,
+  composeTRC20data
+} from './utils'
 
 class TronWallet {
   static generateMnemonic () {
@@ -174,8 +178,8 @@ class TronWallet {
     return getBase58CheckAddress(addressBytes)
   }
 
-  updateTransaction (tx, latestBlock) {
-    const transactionWithRefs = addRef(tx, latestBlock)
+  updateTransaction (tx, latestBlock, isTRC20 = false) {
+    const transactionWithRefs = addRef(tx, latestBlock, isTRC20)
     const signed = signTransaction(
       this.getTronPrivateKey(),
       transactionWithRefs
@@ -243,6 +247,19 @@ class TronWallet {
     const transaction = buildUnfreezeBalance(this.getAddress())
     return this.updateTransaction(transaction, latestBlock)
   }
+  
+  transferTRC20Token (contractAddress, to, amount, latestBlock) {
+    const ownerAddress = toHexAddress(this.getAddress())
+    console.log('ownerAddress', ownerAddress, this.getAddress())
+    const hexContractAddress = toHexAddress(contractAddress)
+    console.log('hexContractAddress', hexContractAddress)
+    const data = composeTRC20data(to, amount)
+    console.log('data', data)
+    const transaction = buildTriggerSmartContract(ownerAddress, hexContractAddress, 0, data)
+    console.log('raw', transaction.getRawData())
+    return this.updateTransaction(transaction, latestBlock, true)
+  }
+
 
   vote (votes, latestBlock) {
     const transaction = buildVote(this.getAddress(), votes)
