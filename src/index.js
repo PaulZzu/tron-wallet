@@ -247,19 +247,14 @@ class TronWallet {
     const transaction = buildUnfreezeBalance(this.getAddress())
     return this.updateTransaction(transaction, latestBlock)
   }
-  
+
   transferTRC20Token (contractAddress, to, amount, latestBlock) {
     const ownerAddress = toHexAddress(this.getAddress())
-    console.log('ownerAddress', ownerAddress, this.getAddress())
     const hexContractAddress = toHexAddress(contractAddress)
-    console.log('hexContractAddress', hexContractAddress)
     const data = composeTRC20data(to, amount)
-    console.log('data', data)
     const transaction = buildTriggerSmartContract(ownerAddress, hexContractAddress, 0, data)
-    console.log('raw', transaction.getRawData())
     return this.updateTransaction(transaction, latestBlock, true)
   }
-
 
   vote (votes, latestBlock) {
     const transaction = buildVote(this.getAddress(), votes)

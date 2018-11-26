@@ -10,7 +10,7 @@ export function addRef (transaction, latestBlock, isTRC20 = false) {
   let rawData = transaction.getRawData()
   rawData.setRefBlockHash(Uint8Array.from(generateBlockId.slice(8, 16)))
   rawData.setRefBlockBytes(Uint8Array.from(numBytes.slice(6, 8)))
-  if(isTRC20){
+  if (isTRC20) {
     rawData.setFeeLimit(1000000000)
     rawData.setTimestamp(latestBlock.timestamp)
   }
