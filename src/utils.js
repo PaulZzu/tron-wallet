@@ -127,5 +127,5 @@ export function composeTRC20data (to, amount = 0) {
   const parameters = abiCoder.encode(types, values).replace(/^(0x)/, '')
   const selectorByteArray = sha3.keccak256.array(Buffer.from(functionSelector)).slice(0, 4)
 
-  return byteArray2hexStr(selectorByteArray).toLowerCase() + parameters
+  return byteArray2hexStr(selectorByteArray) + parameters
 }
