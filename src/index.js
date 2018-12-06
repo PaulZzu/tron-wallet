@@ -243,8 +243,12 @@ class TronWallet {
     return this.updateTransaction(transaction, latestBlock)
   }
 
-  unfreeze (latestBlock) {
-    const transaction = buildUnfreezeBalance(this.getAddress())
+  unfreeze (latestBlock, resource = 'BANDWIDTH') {
+    assert(
+      ['BANDWIDTH', 'ENERGY'].includes(resource),
+      'resource should be one of [BANDWIDTH, ENERGY]'
+    )
+    const transaction = buildUnfreezeBalance(this.getAddress(), resource)
     return this.updateTransaction(transaction, latestBlock)
   }
 
